@@ -14,10 +14,6 @@ import flixel.util.FlxColor;
 import flixel.tweens.FlxTween;
 import flixel.input.keyboard.FlxKey;
 import flixel.tweens.FlxEase;
-#if MODS_ALLOWED
-import sys.FileSystem;
-import sys.io.File;
-#end
 import lime.utils.Assets;
 
 #if !flash 
@@ -64,7 +60,7 @@ class PACreditsState extends MusicBeatState
 	function getCreditJson(path:String):CreditsData {
 		var json:String = null;
 
-		json = File.getContent(Paths.json(path));
+		json = Assets.getText(Paths.json(path));
 
 		if (json != null && json.length > 0) {
 			return cast Json.parse(json);

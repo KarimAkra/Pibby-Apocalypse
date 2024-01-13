@@ -95,12 +95,16 @@ class TitleState extends MusicBeatState
 
 	override public function create():Void
 	{
+		#if mobile
+		FlxG.android.preventDefaultKeys = [BACK];
+		#end
+
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
-		#if LUA_ALLOWED
+		/*#if LUA_ALLOWED
 		Paths.pushGlobalMods();
-		#end
+		#end*/
 		// Just to load a mod on start up if ya got one. For mods that change the menu music and bg
 		WeekData.loadTheFirstEnabledMod();
 
@@ -205,11 +209,6 @@ class TitleState extends MusicBeatState
 		}
 
 		FlxG.mouse.visible = false;
-		if(FlxG.save.data.flashing == null && !FlashingState.leftState) {
-			FlxTransitionableState.skipNextTransIn = true;
-			FlxTransitionableState.skipNextTransOut = true;
-			MusicBeatState.switchState(new FlashingState());
-		} else {
 			#if desktop
 			if (!DiscordClient.isInitialized)
 			{
@@ -231,7 +230,6 @@ class TitleState extends MusicBeatState
 					startIntro();
 				});
 			}
-		}
 	}
 
 	var logoBl:FlxSprite;

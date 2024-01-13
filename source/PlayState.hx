@@ -81,11 +81,9 @@ import sys.io.File;
 #end
 
 #if VIDEOS_ALLOWED
-import VideoHandler;
-import VideoSprite;
+import hxcodec.VideoHandler;
+import hxcodec.VideoSprite;
 #end
-
-
 
 class PlayState extends MusicBeatState
 {
@@ -102,6 +100,7 @@ class PlayState extends MusicBeatState
 
 	var canShakeNote:Bool; // fix for CAWM
 
+  //if (ClientPrefs.shaders){
 	var crtFNF:FlxRuntimeShader;
 	var mawFNF:Shaders.MAWVHS;
     var ntscFNF:Shaders.NtscShader;
@@ -117,6 +116,7 @@ class PlayState extends MusicBeatState
 	var blurFNFZoomEdition:FlxRuntimeShader;
 	var blurFNFZoomEditionHUD: FlxRuntimeShader;
 	var glitchFWFNF:FlxRuntimeShader; // here's where i follow scissor's concept n stuff
+  //}
 
 	public static var ratingStuff:Array<Dynamic> = [
 		['You Suck!', 0.2], //From 0% to 19%
@@ -535,6 +535,7 @@ class PlayState extends MusicBeatState
 
 		#if desktop
 		storyDifficultyText = CoolUtil.difficulties[storyDifficulty];
+    #end
 
 		cnlogo = new BGSprite('cnlogo', 990, 600, 0, 0);
 		cnlogo.setGraphicSize(Std.int(cnlogo.width * 0.17));
@@ -572,9 +573,7 @@ class PlayState extends MusicBeatState
 			if(ClientPrefs.downScroll) cnlogo.y -= 530;
 		}
 
-		// video precachinggggggg
-		Paths.video('Cheating_is_a_sin');
-
+    #if desktop
 		// String that contains the mode defined here so it isn't necessary to call changePresence for each mode
 		if (isStoryMode)
 			detailsText = "Story Mode: " + WeekData.getCurrentWeek().weekName;
@@ -588,19 +587,18 @@ class PlayState extends MusicBeatState
 		GameOverSubstate.resetVariables();
 		var songName:String = Paths.formatToSongPath(SONG.song);
 		
-		curStage = SONG.stage;
-		stage = new ScriptConstructor('stages/${curStage}','stage');
-		@:privateAccess {
-			stage.script.scriptInterpreter.curExpr.line = 0;
-		}
+    curStage = SONG.stage;
+    stage = new ScriptConstructor('stages/${curStage}','stage');
+      @:privateAccess {
+       stage.script.scriptInterpreter.curExpr.line = 0;
+        }
         _scriptMap.set(curStage, stage.script);
         allScripts.push(stage);
-		add(stage);
-		SONG.stage = curStage;
+        add(stage);
+        SONG.stage = curStage;
 
         var daPath:String = 'assets/stages/${curStage}/scripts';
-        if (FileSystem.exists(daPath) && FileSystem.isDirectory(daPath)) {
-            var files:Array<String> = FileSystem.readDirectory(daPath);
+            var files:Array<String> = Assets.list().filter(text -> text.contains(daPath));
             if (files.length > 0) {
                 for (file in files) {
                     var lastIndex:Int = file.lastIndexOf(".");
@@ -608,14 +606,13 @@ class PlayState extends MusicBeatState
                     if (lastIndex != -1) {
                         var fileFixed:String = file.substr(0, lastIndex);
                         trace('Currently loading additional script ${file}');
-                        var daScript:ScriptConstructor = new ScriptConstructor('stages/${curStage}/scripts', fileFixed);
+                        var daScript:ScriptConstructor = new ScriptConstructor('', fileFixed);
                         _scriptMap.set(file, daScript.script);
                         allScripts.push(daScript);
                         add(daScript);
                     }
                 }
             }
-        }
 
 		var stageData:StageFile = StageData.getStageFile(curStage);
 		if(stageData == null) { //Stage couldn't be found, create a dummy stage for preventing a crash
@@ -737,7 +734,7 @@ class PlayState extends MusicBeatState
 		#end
 
 		// "GLOBAL" SCRIPTS
-		#if LUA_ALLOWED
+		/*#if LUA_ALLOWED
 		var filesPushed:Array<String> = [];
 		var foldersToCheck:Array<String> = [Paths.getPreloadPath('scripts/')];
 
@@ -764,7 +761,7 @@ class PlayState extends MusicBeatState
 				}
 			}
 		}
-		#end
+		#end*/
 
 
 		var gfVersion:String = SONG.gfVersion;
@@ -1131,6 +1128,11 @@ class PlayState extends MusicBeatState
         if(SONG.song.toLowerCase() == 'mindless')finnT.cameras = [camHUD];
 		channelTxt.cameras = [camOther];
 
+   #if mobile
+   addMobileControls(false);
+   mobileControls.visible = false;
+   #end
+
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
 		// UI_camera.zoom = 1;
@@ -1141,51 +1143,19 @@ class PlayState extends MusicBeatState
 		#if LUA_ALLOWED
 		for (notetype in noteTypeMap.keys())
 		{
-			#if MODS_ALLOWED
-			var luaToLoad:String = Paths.modFolders('custom_notetypes/' + notetype + '.lua');
-			if(FileSystem.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad, false));
-			}
-			else
-			{
-				luaToLoad = Paths.getPreloadPath('custom_notetypes/' + notetype + '.lua');
-				if(FileSystem.exists(luaToLoad))
-				{
-					luaArray.push(new FunkinLua(luaToLoad, false));
-				}
-			}
-			#elseif sys
 			var luaToLoad:String = Paths.getPreloadPath('custom_notetypes/' + notetype + '.lua');
 			if(OpenFlAssets.exists(luaToLoad))
 			{
-				luaArray.push(new FunkinLua(luaToLoad, false));
+				luaArray.push(new FunkinLua(Asset2File.getPath(luaToLoad), false));
 			}
-			#end
 		}
 		for (event in eventPushedMap.keys())
 		{
-			#if MODS_ALLOWED
-			var luaToLoad:String = Paths.modFolders('custom_events/' + event + '.lua');
-			if(FileSystem.exists(luaToLoad))
-			{
-				luaArray.push(new FunkinLua(luaToLoad, false));
-			}
-			else
-			{
-				luaToLoad = Paths.getPreloadPath('custom_events/' + event + '.lua');
-				if(FileSystem.exists(luaToLoad))
-				{
-					luaArray.push(new FunkinLua(luaToLoad, false));
-				}
-			}
-			#elseif sys
 			var luaToLoad:String = Paths.getPreloadPath('custom_events/' + event + '.lua');
 			if(OpenFlAssets.exists(luaToLoad))
 			{
-				luaArray.push(new FunkinLua(luaToLoad, false));
+				luaArray.push(new FunkinLua(Asset2File.getPath(luaToLoad), false));
 			}
-			#end
 		}
 		#end
 		noteTypeMap.clear();
@@ -1194,7 +1164,7 @@ class PlayState extends MusicBeatState
 		eventPushedMap = null;
 
 		// SONG SPECIFIC SCRIPTS
-		#if LUA_ALLOWED
+		/*#if LUA_ALLOWED
 		var filesPushed:Array<String> = [];
 		var foldersToCheck:Array<String> = [Paths.getPreloadPath('data/' + Paths.formatToSongPath(SONG.song) + '/')];
 
@@ -1225,7 +1195,7 @@ class PlayState extends MusicBeatState
 
         for (luaCode in Scripts.luaScripts) {
             runLuaCode(luaCode);
-        }
+        }*/
 
 		var daSong:String = Paths.formatToSongPath(curSong);
 		if (isStoryMode && !seenCutscene)
@@ -1256,7 +1226,8 @@ class PlayState extends MusicBeatState
 		}
 
 		precacheList.set('alphabet', 'image');
-	
+
+		#if desktop	
 		switch(SONG.song.replace('-', ' '))
 		{
 			case "Mindless" | "Brotherly Love" | "Blessed By Swords" | "Suffering Siblings":
@@ -1275,7 +1246,6 @@ class PlayState extends MusicBeatState
 				largeKey = "https://i.imgur.com/j1NOFU9.gif";
 		}
 
-		#if desktop
 		// Updating Discord Rich Presence.
 		DiscordClient.changePresence(detailsText, SONG.song, iconP2.getCharacter(), null, null, largeKey);
 		#end
@@ -1299,21 +1269,22 @@ class PlayState extends MusicBeatState
         }
 		timeTxt.setFormat(Paths.font(storyWeekName + '.ttf'), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 
+    if (ClientPrefs.shaders){
 		pibbyFNF = new Shaders.Pibbified();
 		ntscFNF = new Shaders.NtscShader();
 		mawFNF = new Shaders.MAWVHS();
-		crtFNF = new FlxRuntimeShader(RuntimeShaders.monitor, null, 120);
-		distortFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 120);
-        distortCAWMFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 120);
-        glowfnf = new FlxRuntimeShader(RuntimeShaders.glowy, null, 120);
-		distortDadFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 120);
+		crtFNF = new FlxRuntimeShader(RuntimeShaders.monitor, null, 100);
+		distortFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 100);
+        distortCAWMFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 100);
+        glowfnf = new FlxRuntimeShader(RuntimeShaders.glowy, null, 100);
+		distortDadFNF = new FlxRuntimeShader(RuntimeShaders.distort, null, 100);
 		invertFNF = new Shaders.InvertShader();
-		chromFNF = new FlxRuntimeShader(RuntimeShaders.chromShader, null, 120);
+		chromFNF = new FlxRuntimeShader(RuntimeShaders.chromShader, null, 100);
 		pincFNF = new Shaders.PincushionShader();
 		blurFNF = new Shaders.BlurShader();
-		blurFNFZoomEdition = new FlxRuntimeShader(RuntimeShaders.blurZoom, null, 120);
-		blurFNFZoomEditionHUD = new FlxRuntimeShader(RuntimeShaders.blurZoom, null, 120);
-		glitchFWFNF = new FlxRuntimeShader(RuntimeShaders.fwGlitch, null, 120);
+		blurFNFZoomEdition = new FlxRuntimeShader(RuntimeShaders.blurZoom, null, 100);
+		blurFNFZoomEditionHUD = new FlxRuntimeShader(RuntimeShaders.blurZoom, null, 100);
+		glitchFWFNF = new FlxRuntimeShader(RuntimeShaders.fwGlitch, null, 100);
 		camVoid.setFilters([new ShaderFilter(pincFNF)]);
 
         distortDadFNF.setFloat("negativity", 0.0);
@@ -1322,7 +1293,8 @@ class PlayState extends MusicBeatState
 
         distortFNF.setFloat("binaryIntensity", 1000.0);
         distortCAWMFNF.setFloat("binaryIntensity", 1000.0);
-        
+    }
+ 
 		if(ClientPrefs.shaders) {
 			camHUD.setFilters([new ShaderFilter(pibbyFNF),new ShaderFilter(chromFNF)]);
 			camGame.setFilters([new ShaderFilter(pibbyFNF),new ShaderFilter(chromFNF)]);
@@ -1408,7 +1380,7 @@ class PlayState extends MusicBeatState
                     if (ClientPrefs.gore) {
 					    //GameOverSubstate.characterName = (FlxG.random.bool() ? 'bf-dead-jake' : 'bf-dead-finn');
 						GameOverSubstate.characterName = 'deathscreen';
-						GameOverSubstate.deathSoundName = 'glitchshit';
+						GameOverSubstate.deathSoundName = 'glitchhit';
 						GameOverSubstate.soundLibraryStart = 'shared';
 						GameOverSubstate.endSoundName = 'gameOverEnd';
 
@@ -1463,7 +1435,6 @@ class PlayState extends MusicBeatState
 					{
 						FlxG.camera.pushFilter("blurMoment", new ShaderFilter(blurFNFZoomEdition));
 						camHUD.pushFilter("blurMoment2", new ShaderFilter(blurFNFZoomEditionHUD));
-					}
 					blurFNFZoomEdition.setFloat('posX', 0.5);
 					blurFNFZoomEdition.setFloat('posY', 0.5);
 					blurFNFZoomEdition.setFloat('focusPower', 6);
@@ -1471,6 +1442,7 @@ class PlayState extends MusicBeatState
 					blurFNFZoomEditionHUD.setFloat('posX', 0.5);
 					blurFNFZoomEditionHUD.setFloat('posY', 0.5);
 					blurFNFZoomEditionHUD.setFloat('focusPower', 2);
+					}
 
                     if (ClientPrefs.gore) {
 					    GameOverSubstate.characterName = 'bf-dead-finn';
@@ -1542,7 +1514,7 @@ class PlayState extends MusicBeatState
 		#end
 	}
 
-	public function initLuaShader(name:String, ?glslVersion:Int = 120)
+	public function initLuaShader(name:String, ?glslVersion:Int = 100)
 	{
 		if(!ClientPrefs.shaders) return false;
 
@@ -1552,20 +1524,26 @@ class PlayState extends MusicBeatState
 			return true;
 		}
 
+        #if none
 		var foldersToCheck:Array<String> = [Paths.mods('shaders/')];
 		if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
 			foldersToCheck.insert(0, Paths.mods(Paths.currentModDirectory + '/shaders/'));
+		#else
+		var foldersToCheck:Array<String> = [Paths.getPreloadPath('shaders/')];
+		#end
 
-		for(mod in Paths.getGlobalMods())
-			foldersToCheck.insert(0, Paths.mods(mod + '/shaders/'));
-		
 		for (folder in foldersToCheck)
 		{
+			#if desktop
 			if(FileSystem.exists(folder))
+			#else
+			if(OpenFlAssets.exists(folder))
+			#end
 			{
 				var frag:String = folder + name + '.frag';
 				var vert:String = folder + name + '.vert';
 				var found:Bool = false;
+				#if desktop
 				if(FileSystem.exists(frag))
 				{
 					frag = File.getContent(frag);
@@ -1579,6 +1557,21 @@ class PlayState extends MusicBeatState
 					found = true;
 				}
 				else vert = null;
+				#else
+				if(OpenFlAssets.exists(frag))
+				{
+					frag = Assets.getText(frag);
+					found = true;
+				}
+				else frag = null;
+	
+				if (OpenFlAssets.exists(vert))
+				{
+					vert = Assets.getText(vert);
+					found = true;
+				}
+				else vert = null;
+				#end
 
 				if(found)
 				{
@@ -1688,22 +1681,11 @@ class PlayState extends MusicBeatState
 		#if LUA_ALLOWED
 		var doPush:Bool = false;
 		var luaFile:String = 'characters/' + name + '.lua';
-		#if MODS_ALLOWED
-		if(FileSystem.exists(Paths.modFolders(luaFile))) {
-			luaFile = Paths.modFolders(luaFile);
-			doPush = true;
-		} else {
-			luaFile = Paths.getPreloadPath(luaFile);
-			if(FileSystem.exists(luaFile)) {
-				doPush = true;
-			}
-		}
-		#else
+
 		luaFile = Paths.getPreloadPath(luaFile);
 		if(Assets.exists(luaFile)) {
 			doPush = true;
 		}
-		#end
 
 		if(doPush)
 		{
@@ -1711,7 +1693,7 @@ class PlayState extends MusicBeatState
 			{
 				if(script.scriptName == luaFile) return;
 			}
-			luaArray.push(new FunkinLua(luaFile, false));
+			luaArray.push(new FunkinLua(Asset2File.getPath(luaFile), false));
 		}
 		#end
 	}
@@ -1739,7 +1721,7 @@ class PlayState extends MusicBeatState
 		inCutscene = true;
 
 		var filepath:String = Paths.video('Cheating_is_a_sin');
-		#if sys
+		#if desktop
 		if(!FileSystem.exists(filepath))
 		#else
 		if(!OpenFlAssets.exists(filepath))
@@ -1763,9 +1745,7 @@ class PlayState extends MusicBeatState
 		cheatingVideo.finishCallback = function()
 		{
 			persistentUpdate = true;
-			#if windows
-			lime.app.Application.current.window.alert('Our game, our rules, ' + Sys.environment()["USERNAME"] + '.' + '\n- Finn');
-			#end
+			lime.app.Application.current.window.alert('Our game, our rules' + '.' + '\n- Finn');
 			Sys.exit(0);
 		}
 		#else
@@ -1781,7 +1761,7 @@ class PlayState extends MusicBeatState
 		inCutscene = true;
 
 		var filepath:String = Paths.video(name);
-		#if sys
+		#if desktop
 		if(!FileSystem.exists(filepath))
 		#else
 		if(!OpenFlAssets.exists(filepath))
@@ -1835,10 +1815,18 @@ class PlayState extends MusicBeatState
 		for (asset in introAlts)
 			Paths.image(asset);
 		
-		Paths.sound('intro3' + introSoundsSuffix);
-		Paths.sound('intro2' + introSoundsSuffix);
-		Paths.sound('intro1' + introSoundsSuffix);
-		Paths.sound('introGo' + introSoundsSuffix);
+
+		if(isPixelStage) {
+		Paths.sound('intro3-pixel');
+		Paths.sound('intro2-pixel');
+		Paths.sound('intro1-pixel');
+		Paths.sound('introGo-pixel');
+		} else { // fix of the dumb error
+		Paths.sound('3');
+		Paths.sound('2');
+		Paths.sound('1');
+		Paths.sound('go');
+		}
 	}
 
 	private function cameraBump( isFinal : Bool = false ) : Void
@@ -1863,6 +1851,10 @@ class PlayState extends MusicBeatState
 	var introCharacter = 'bf_intro';
 	public function startCountdown():Void
     {
+     #if mobile
+     mobileControls.visible = true;
+     #end
+ 
         if (SONG.player1.contains('newbf')) {
 			switch (SONG.song)
 			{
@@ -2726,7 +2718,7 @@ class PlayState extends MusicBeatState
 		if(ClientPrefs.shaders) {
 			shaderStuff += elapsed;
 
-            chromFNF.setFloat('aberration', abberationShaderIntensity);
+            chromFNF.setFloat('aberration', abberationShaderIntensity); // error in this shader/line
 			pibbyFNF.glitchMultiply.value[0] = glitchShaderIntensity;
             distortFNF.setFloat('binaryIntensity', distortIntensity);
             distortCAWMFNF.setFloat('binaryIntensity', distortIntensity);
@@ -2816,7 +2808,7 @@ class PlayState extends MusicBeatState
 			botplayTxt.alpha = 1 - Math.sin((Math.PI * botplaySine) / 180);
 		}
 
-		if (controls.PAUSE && startedCountdown && canPause)
+		if (controls.PAUSE #if mobile || FlxG.android.justReleased.BACK #end && startedCountdown && canPause)
 		{
             for (hScript in allScripts) {
 			    hScript.onPause();
@@ -3473,7 +3465,7 @@ class PlayState extends MusicBeatState
                         trace("DO NOT BAD APPLE TWICE!!");
                         return;
                     }
-                    if (ClientPrefs.shaders || !ClientPrefs.lowQuality) camGame.pushFilter("glow",new ShaderFilter(glowfnf));
+                    if (ClientPrefs.shaders && !ClientPrefs.lowQuality) camGame.pushFilter("glow",new ShaderFilter(glowfnf)); //xd
 					if (value2.toLowerCase() == 'black') {
 						touhouBG = new FlxSprite(-FlxG.width * FlxG.camera.zoom,
 							-FlxG.height * FlxG.camera.zoom).makeGraphic(FlxG.width * 3, FlxG.height * 3, FlxColor.BLACK);
@@ -3503,7 +3495,7 @@ class PlayState extends MusicBeatState
 				else{
                     if(touhouBG==null)return; // ficks
                     isAppleLOL = false;
-                    if (ClientPrefs.shaders || !ClientPrefs.lowQuality) camGame.removeFilter("glow");
+                    if (ClientPrefs.shaders && !ClientPrefs.lowQuality) camGame.removeFilter("glow");
 					touhouBG.alpha = 0;
 					touhouBG.kill();
 					touhouBG = null;
@@ -3830,6 +3822,9 @@ class PlayState extends MusicBeatState
 	public var transitioning = false;
 	public function endSong():Void
 	{
+	  #if mobile
+	  mobileControls.visible = false;
+	  #end
 		//Should kill you if you tried to cheat
 		if(!startingSong) {
 			notes.forEach(function(daNote:Note) {
@@ -5126,8 +5121,10 @@ class PlayState extends MusicBeatState
 									add(vig);
 								}
 							// im pretty sure i could just use camera._filters.remove(filter) but just in case
+							if (ClientPrefs.shaders){
 							blurFNFZoomEdition.setFloat('focusPower', 0);
 							blurFNFZoomEditionHUD.setFloat('focusPower', 0);
+							}
 							FlxTween.tween(theBlackness, {alpha: 0}, 0.6, {ease: FlxEase.sineInOut});
 						case 656:
 							defaultCamZoom = 0.85;
@@ -5534,7 +5531,7 @@ class PlayState extends MusicBeatState
                             if (ClientPrefs.flashing) {
                                 camOverlay.flash(FlxColor.WHITE, 1.5);
                             }
-                            triggerEventNote('Apple Filter', 'off', 'black');
+                           triggerEventNote('Apple Filter', 'off', 'black');
 						case 1728:
 							if (ClientPrefs.flashing) {
 								camOverlay.flash(FlxColor.WHITE, 1);
@@ -7080,7 +7077,7 @@ class PlayState extends MusicBeatState
 	var lastBeatHit:Int = -1;
 
     public function runLuaCode(string:String) {
-        luaArray.push(new FunkinLua(string, true));
+        luaArray.push(new FunkinLua(Asset2File.getPath(string), true));
     }
 
 	override function beatHit()
@@ -7778,7 +7775,7 @@ class PlayState extends MusicBeatState
 			// had to do this because there is a bug in haxe where Stop != Continue doesnt work
 			var bool:Bool = ret == FunkinLua.Function_Continue;
 			if(!bool && ret != 0) {
-				returnVal = cast ret;
+				returnVal = ret;
 			}
 		}
 		#end

@@ -108,6 +108,11 @@ class ControlsSubState extends MusicBeatSubstate {
 				bindLength++;
 				if(curSelected < 0) curSelected = i;
 			}
+
+        #if mobile
+		addVirtualPad(LEFT_FULL, A_B);
+		addVirtualPadCamera(false);
+		#end
 		}
 		changeSelection();
 	}
@@ -128,7 +133,11 @@ class ControlsSubState extends MusicBeatSubstate {
 
 			if (controls.BACK) {
 				ClientPrefs.reloadControls();
-				close();
+		  #if desktop
+			close();
+			#else
+			FlxG.resetState();
+			#end
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 			}
 

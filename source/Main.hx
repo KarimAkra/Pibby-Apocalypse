@@ -23,7 +23,7 @@ import lime.app.Application;
 import openfl.events.UncaughtErrorEvent;
 import haxe.CallStack;
 import haxe.io.Path;
-import Discord.DiscordClient;
+//import Discord.DiscordClient;
 import sys.FileSystem;
 import sys.io.File;
 import sys.io.Process;
@@ -64,6 +64,11 @@ class Main extends Sprite
 	public function new()
 	{
 		super();
+
+        #if mobile
+		Generic.initCrashHandler();
+		Generic.mode = ROOTDATA;
+		#end
 
 		if (stage != null)
 		{
@@ -107,17 +112,19 @@ class Main extends Sprite
 	
 		ClientPrefs.loadDefaultKeys();
 		ClientPrefs.getGameplaySetting('botplay', false);
+    #if desktop
 		addChild(new FlxGame(gameWidth, gameHeight, initialState, framerate, framerate, skipSplash, startFullscreen));
+	  #else
+		addChild(new FlxGame(1280, 720, TitleState, 60, 60, true, false));
+    #end
 
 		ScriptManager.init();
 		InputFormatter.loadKeys();
 
-		#if !mobile
 		addChild(new FPSCounter(10, 3, 0xFFFFFF));
 		if(FPSCounter.instance != null) {
 			FPSCounter.instance.visible = ClientPrefs.showFPS;
 		}
-		#end
 
         if (debug)
 		{
@@ -172,7 +179,7 @@ class Main extends Sprite
 		dateNow = dateNow.replace(" ", "_");
 		dateNow = dateNow.replace(":", "'");
 
-		path = "./crash/" + "PsychEngine_" + dateNow + ".txt";
+		path = "crash/" + "PsychEngine_" + dateNow + ".txt";
 
 		for (stackItem in callStack)
 		{
@@ -187,16 +194,20 @@ class Main extends Sprite
 
 		errMsg += "\nUncaught Error: " + e.error + "\nPlease report this error to the GitHub page: https://github.com/ShadowMario/FNF-PsychEngine\n\n> Crash Handler written by: sqirra-rng";
 
+		#if desktop
 		if (!FileSystem.exists("./crash/"))
 			FileSystem.createDirectory("./crash/");
 
 		File.saveContent(path, errMsg + "\n");
+		#end
 
 		Sys.println(errMsg);
 		Sys.println("Crash dump saved in " + Path.normalize(path));
 
 		Application.current.window.alert(errMsg, "Error!");
+		#if desktop
 		DiscordClient.shutdown();
+		#end
 		Sys.exit(1);
 	}
 	#end

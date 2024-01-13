@@ -119,6 +119,11 @@ class PauseSubState extends MusicBeatSubstate
 		add(grpMenuShit);
 
 		regenMenu();
+
+		#if mobile
+		addVirtualPad(UP_DOWN, A);
+		addVirtualPadCamera(false);
+		#end
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
 	}
 
@@ -240,7 +245,9 @@ class PauseSubState extends MusicBeatSubstate
 					PlayState.seenCutscene = false;
 					options = false;
 
+          #if MODS_ALLOWED
 					WeekData.loadTheFirstEnabledMod();
+					#end
 					if(PlayState.isStoryMode) {
 						MusicBeatState.switchState(new StoryMenuState());
 						FlxG.sound.playMusic(Paths.music('freakyMenu_${Main.funnyMenuMusic}'));

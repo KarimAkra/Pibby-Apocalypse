@@ -271,7 +271,7 @@ class FunkinLua {
 		});
 
 		// shader shit
-		Lua_helper.add_callback(lua, "initLuaShader", function(name:String, glslVersion:Int = 120) {
+		Lua_helper.add_callback(lua, "initLuaShader", function(name:String, glslVersion:Int = 100) {
 			if(!ClientPrefs.shaders) return false;
 
 			#if (!flash && MODS_ALLOWED && sys)
@@ -2561,9 +2561,11 @@ class FunkinLua {
 		Lua_helper.add_callback(lua, "saveFile", function(path:String, content:String, ?absolute:Bool = false)
 		{
 			try {
+			  #if MOSD_ALLOWED
 				if(!absolute)
 					File.saveContent(Paths.mods(path), content);
 				else
+				#end
 					File.saveContent(path, content);
 
 				return true;
@@ -2887,7 +2889,7 @@ class FunkinLua {
 	}
 	#end
 	
-	function initLuaShader(name:String, ?glslVersion:Int = 120)
+	function initLuaShader(name:String, ?glslVersion:Int = 100)
 	{
 		if(!ClientPrefs.shaders) return false;
 
@@ -2898,20 +2900,26 @@ class FunkinLua {
 			return true;
 		}
 
+        #if none
 		var foldersToCheck:Array<String> = [Paths.mods('shaders/')];
 		if(Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
 			foldersToCheck.insert(0, Paths.mods(Paths.currentModDirectory + '/shaders/'));
+		#else
+		var foldersToCheck:Array<String> = [Paths.getPreloadPath('shaders/')];
+		#end
 
-		for(mod in Paths.getGlobalMods())
-			foldersToCheck.insert(0, Paths.mods(mod + '/shaders/'));
-		
 		for (folder in foldersToCheck)
 		{
+			#if desktop
 			if(FileSystem.exists(folder))
+			#else
+			if(Assets.exists(folder))
+			#end
 			{
 				var frag:String = folder + name + '.frag';
 				var vert:String = folder + name + '.vert';
 				var found:Bool = false;
+				#if desktop
 				if(FileSystem.exists(frag))
 				{
 					frag = File.getContent(frag);
@@ -2919,12 +2927,27 @@ class FunkinLua {
 				}
 				else frag = null;
 
-				if(FileSystem.exists(vert))
+				if (FileSystem.exists(vert))
 				{
 					vert = File.getContent(vert);
 					found = true;
 				}
 				else vert = null;
+				#else
+				if(Assets.exists(frag))
+				{
+					frag = Assets.getText(frag);
+					found = true;
+				}
+				else frag = null;
+	
+				if (Assets.exists(vert))
+				{
+					vert = Assets.getText(vert);
+					found = true;
+				}
+				else vert = null;
+				#end
 
 				if(found)
 				{

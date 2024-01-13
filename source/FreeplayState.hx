@@ -26,9 +26,6 @@ import WeekData;
 import flixel.addons.display.FlxRuntimeShader;
 import openfl.filters.ShaderFilter;
 #end
-#if MODS_ALLOWED
-import sys.FileSystem;
-#end
 
 using StringTools;
 
@@ -71,7 +68,7 @@ class FreeplayState extends MusicBeatState
 	private var iconArray:Array<HealthIcon> = [];
 
 	var threatPercent:Int;
-    var glitchFWFNF:FlxRuntimeShader = new FlxRuntimeShader(RuntimeShaders.fwGlitch, null, 120);
+    var glitchFWFNF:FlxRuntimeShader = new FlxRuntimeShader(RuntimeShaders.fwGlitch, null, 100);
 
 	var bg:FlxSprite;
     var arrowL:FlxSprite;
@@ -86,7 +83,7 @@ class FreeplayState extends MusicBeatState
 	var levelBar:FlxBar;
 	var gradient:FlxSprite;
 
-	var bloomFNF:FlxRuntimeShader = new FlxRuntimeShader(RuntimeShaders.dayybloomshader, null, 120);
+	var bloomFNF:FlxRuntimeShader = new FlxRuntimeShader(RuntimeShaders.dayybloomshader, null, 100);
 
 	var canPress = false;
 	var saveY:Float;
@@ -96,8 +93,8 @@ class FreeplayState extends MusicBeatState
 
 	override function create()
 	{
-		//Paths.clearStoredMemory();
-		//Paths.clearUnusedMemory();
+		Paths.clearStoredMemory();
+		Paths.clearUnusedMemory();
 		
 		persistentUpdate = true;
 		PlayState.isStoryMode = false;
@@ -141,7 +138,9 @@ class FreeplayState extends MusicBeatState
 				addSong(song[0], i, song[1], FlxColor.fromRGB(colors[0], colors[1], colors[2]), song[3]);
 			}
 		}
+		#if desktop
 		WeekData.loadTheFirstEnabledMod();
+		#end
 
 		// fuck you nulls
 		new FlxTimer().start(0.5, grah -> canPress = true);
@@ -331,6 +330,10 @@ class FreeplayState extends MusicBeatState
 				}
 		});
 
+    #if mobile
+    addVirtualPad(UP_LEFT_RIGHT, A);
+    #end
+
 		super.create();
 	}
 
@@ -472,7 +475,7 @@ class FreeplayState extends MusicBeatState
 		FlxG.camera.zoom = FlxMath.lerp(1, FlxG.camera.zoom, CoolUtil.boundTo(1 - (elapsed * 3.125), 0, 1));
 		threatLerp = FlxMath.lerp(threatLerp, threatPercent, CoolUtil.boundTo(elapsed * 4, 0, 1));
 
-		if (controls.BACK)
+		if (controls.BACK #if mobile || FlxG.android.justReleased.BACK #end)
 		{
 			persistentUpdate = false;
 			FlxG.sound.play(Paths.sound('cancelMenu'));
@@ -588,6 +591,8 @@ class FreeplayState extends MusicBeatState
 			{
 				shaderIntensity = FlxG.random.float(0.2, 0.3);
 			}
+			
+			if (ClientPrefs.shaders)
 			pibbyFNF.glitchMultiply.value[0] = shaderIntensity;
 	}
 
@@ -667,7 +672,7 @@ class FreeplayState extends MusicBeatState
 				// item.setGraphicSize(Std.int(item.width));
 			}
 		}
-		
+
 		Paths.currentModDirectory = songs[curSelected].folder;
 		PlayState.storyWeek = songs[curSelected].week;
 

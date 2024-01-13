@@ -123,6 +123,10 @@ class BaseOptionsMenu extends MusicBeatSubstate
 			updateTextFrom(optionsArray[i]);
 		}
 
+       #if mobile
+	   addVirtualPad(LEFT_FULL, A_B_C);
+       addVirtualPadCamera(false);
+	   #end
 		changeSelection();
 		reloadCheckboxes();
 	}
@@ -147,7 +151,11 @@ class BaseOptionsMenu extends MusicBeatSubstate
 		}
 
 		if (controls.BACK) {
+		  #if desktop
 			close();
+			#else
+			FlxG.resetState();
+			#end
 			FlxG.sound.play(Paths.sound('cancelMenu'));
 		}
 
@@ -240,7 +248,7 @@ class BaseOptionsMenu extends MusicBeatSubstate
 				}
 			}
 
-			if(controls.RESET)
+			if(controls.RESET #if mobile || virtualPad.buttonC.justPressed #end)
 			{
 				for (i in 0...optionsArray.length)
 				{

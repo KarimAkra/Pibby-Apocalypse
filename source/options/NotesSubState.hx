@@ -89,6 +89,11 @@ class NotesSubState extends MusicBeatSubstate
 		hsbText.scaleY = 0.6;
 		add(hsbText);
 
+        #if mobile
+		addVirtualPad(LEFT_FULL, A_B_C);
+		addVirtualPadCamera(false);
+		#end
+
 		changeSelection();
 	}
 
@@ -143,7 +148,7 @@ class NotesSubState extends MusicBeatSubstate
 				changeType(1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
-			if(controls.RESET) {
+			if(controls.RESET #if mobile || virtualPad.buttonC.justPressed #end) {
 				for (i in 0...3) {
 					resetValue(curSelected, i);
 				}
@@ -174,7 +179,11 @@ class NotesSubState extends MusicBeatSubstate
 
 		if (controls.BACK || (changingNote && controls.ACCEPT)) {
 			if(!changingNote) {
-				close();
+		  #if desktop
+			close();
+			#else
+			FlxG.resetState();
+			#end
 			} else {
 				changeSelection();
 			}
